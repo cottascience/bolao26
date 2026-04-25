@@ -8,11 +8,19 @@ permalink: /palpites/
 
 Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do visitante) e clica em enviar. Prazo: **10/06/2026, 23:59 BRT**.
 
-<form id="palpite-form" class="palpite-form">
+<div id="palpite-form-closed" class="palpite-form-thanks" hidden>
+  <h4>Prazo encerrado ⏰</h4>
+  <p>O envio de palpites da fase de grupos fechou em <strong>10/06/2026, 23:59 BRT</strong>. Entra em contato no grupo se acha que isso é um erro.</p>
+</div>
+
+<form id="palpite-form" class="palpite-form" data-deadline="2026-06-10T23:59:59-03:00">
   <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 
   <label class="palpite-form-label" for="nome">Nome</label>
   <input class="palpite-form-nome" type="text" id="nome" name="nome" required autocomplete="name" placeholder="Como aparece no ranking">
+
+  <label class="palpite-form-label" for="palavra_chave">Palavra-chave (combinada no grupo)</label>
+  <input class="palpite-form-nome" type="text" id="palavra_chave" name="palavra_chave" required autocomplete="off" placeholder="combinada no grupo do bolão">
 
 {% assign jogos = site.data.matches | where: "stage_id", "1" %}
 {% assign grupos = "A,B,C,D,E,F,G,H,I,J,K,L" | split: "," %}
@@ -55,7 +63,16 @@ Se você quer preencher offline e me mandar por outro canal, baixa o template, p
   const form = document.getElementById('palpite-form');
   const status = document.getElementById('palpite-form-status');
   const thanks = document.getElementById('palpite-form-thanks');
+  const closed = document.getElementById('palpite-form-closed');
   const KEY = 'bolao26_palpite_v1';
+
+  // checa prazo
+  const deadlineMs = Date.parse(form.dataset.deadline);
+  if (Number.isFinite(deadlineMs) && Date.now() > deadlineMs) {
+    form.hidden = true;
+    closed.hidden = false;
+    return;
+  }
 
   // restaura rascunho local
   try {

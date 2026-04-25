@@ -28,6 +28,24 @@ export default {
       return jsonResponse({ ok: true }, 200, origin);
     }
 
+    const deadlineMs = Date.parse(env.DEADLINE_FASE_GRUPOS);
+    if (Number.isFinite(deadlineMs) && Date.now() > deadlineMs) {
+      return jsonResponse(
+        { error: "prazo encerrado em 10/06/2026, 23:59 BRT — não tô mais aceitando palpites de fase de grupos" },
+        403,
+        origin
+      );
+    }
+
+    const expected = (env.SUBMISSION_KEYWORD || "").trim().toLowerCase();
+    const provided = (body.palavra_chave || "").trim().toLowerCase();
+    if (!expected) {
+      return jsonResponse({ error: "servidor sem palavra-chave configurada" }, 500, origin);
+    }
+    if (provided !== expected) {
+      return jsonResponse({ error: "palavra-chave inválida" }, 401, origin);
+    }
+
     const nome = (body.nome || "").trim().replace(/\s+/g, " ");
     if (!nome) {
       return jsonResponse({ error: "nome é obrigatório" }, 400, origin);

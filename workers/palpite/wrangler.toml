@@ -7,5 +7,8 @@ GITHUB_OWNER = "cottascience"
 GITHUB_REPO = "bolao26"
 GITHUB_BRANCH = "main"
 ALLOWED_ORIGIN = "https://cottascience.github.io"
+DEADLINE_FASE_GRUPOS = "2026-06-10T23:59:59-03:00"
 
-# secret: GITHUB_TOKEN — set via `wrangler secret put GITHUB_TOKEN`
+# secrets (set via `wrangler secret put <NAME>`):
+#   GITHUB_TOKEN          — fine-grained PAT pra commitar no repo
+#   SUBMISSION_KEYWORD    — palavra-chave compartilhada com os amigos no grupo
