@@ -193,10 +193,20 @@ li {
 }
 
 .page-content img.home-logo {
-  display: block;
-  max-width: 320px;
-  width: 100%;
-  margin: 0 auto 1.4em;
+  float: right;
+  width: 35%;
+  max-width: 260px;
+  margin: 0 0 1em 1.5em;
+  shape-outside: margin-box;
+}
+
+@media screen and (max-width: 480px) {
+  .page-content img.home-logo {
+    float: none;
+    display: block;
+    width: 70%;
+    margin: 0 auto 1em;
+  }
 }
 
 .rss-subscribe {
