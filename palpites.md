@@ -25,7 +25,7 @@ Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do v
 {% assign jogos = site.data.matches | where: "stage_id", "1" %}
 {% assign grupos = "A,B,C,D,E,F,G,H,I,J,K,L" | split: "," %}
 {% for letra in grupos %}
-  <details class="palpite-form-grupo" open>
+  <details class="palpite-form-grupo">
     <summary>Grupo {{ letra }}</summary>
     {% for jogo in jogos %}
       {% assign home = site.data.teams | where: "id", jogo.home_team_id | first %}
