@@ -2,6 +2,8 @@
 layout: home
 ---
 
+<img src="{{ '/assets/logo.png' | relative_url }}" alt="BigBolaBrasil — Bolão da Copa 2026" class="home-logo">
+
 Bem-vindo ao bolão da Copa do Mundo de 2026 entre amigos. Aqui ficam as regras, os palpites de cada um e a classificação ao longo do torneio.
 
 A Copa começa em **11 de junho de 2026**, com sede compartilhada entre Estados Unidos, México e Canadá. Os palpites de fase de grupos precisam ser entregues antes do apito inicial do primeiro jogo.
