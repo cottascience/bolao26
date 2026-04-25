@@ -22,19 +22,23 @@ def main():
 
     rows = []
     for m in matches:
-        if m["stage_id"] != "1":
-            continue
         date_part, time_part = m["kickoff_brt"].split(" ", 1)
         _, mo, d = date_part.split("-")
         hh, mm, _ = time_part.split(":", 2)
-        rows.append({
+        stage_id = int(m["stage_id"])
+        entry = {
             "id": int(m["id"]),
-            "grupo": teams[m["home_team_id"]]["group_letter"],
+            "stage_id": stage_id,
             "data": f"{d}/{mo}",
             "hora": f"{hh}:{mm}",
-            "mandante": teams[m["home_team_id"]]["team_name_pt"],
-            "visitante": teams[m["away_team_id"]]["team_name_pt"],
-        })
+        }
+        if stage_id == 1:
+            entry.update({
+                "grupo": teams[m["home_team_id"]]["group_letter"],
+                "mandante": teams[m["home_team_id"]]["team_name_pt"],
+                "visitante": teams[m["away_team_id"]]["team_name_pt"],
+            })
+        rows.append(entry)
     rows.sort(key=lambda r: r["id"])
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

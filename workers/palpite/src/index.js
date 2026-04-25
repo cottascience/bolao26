@@ -1,17 +1,19 @@
-// Cloudflare Worker: recebe palpite via POST do form em /palpites/,
-// valida, gera YAML e commita em _data/palpites/<slug>.yml via GitHub API.
+// Cloudflare Worker: recebe palpites e resultados via POST do site,
+// valida e commita _data/palpites/<slug>.yml ou _data/resultados.csv
+// no repo via GitHub API.
 
 import { matches } from "./matches.js";
+
+const validMatchIds = new Set(matches.map((m) => m.id));
+const palpiteMatches = matches.filter((m) => m.stage_id === 1);
 
 export default {
   async fetch(request, env) {
     const origin = env.ALLOWED_ORIGIN;
+    const path = new URL(request.url).pathname;
 
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders(origin),
-      });
+      return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
     if (request.method !== "POST") {
       return jsonResponse({ error: "method not allowed" }, 405, origin);
@@ -28,15 +30,6 @@ export default {
       return jsonResponse({ ok: true }, 200, origin);
     }
 
-    const deadlineMs = Date.parse(env.DEADLINE_FASE_GRUPOS);
-    if (Number.isFinite(deadlineMs) && Date.now() > deadlineMs) {
-      return jsonResponse(
-        { error: "prazo encerrado em 10/06/2026, 23:59 BRT — não tô mais aceitando palpites de fase de grupos" },
-        403,
-        origin
-      );
-    }
-
     const expected = (env.SUBMISSION_KEYWORD || "").trim().toLowerCase();
     const provided = (body.palavra_chave || "").trim().toLowerCase();
     if (!expected) {
@@ -46,52 +39,117 @@ export default {
       return jsonResponse({ error: "palavra-chave inválida" }, 401, origin);
     }
 
-    const nome = (body.nome || "").trim().replace(/\s+/g, " ");
-    if (!nome) {
-      return jsonResponse({ error: "nome é obrigatório" }, 400, origin);
+    if (path === "/resultado") {
+      return handleResultado(body, env, origin);
     }
-    if (nome.length > 80) {
-      return jsonResponse({ error: "nome muito longo (máx 80 caracteres)" }, 400, origin);
-    }
+    return handlePalpite(body, env, origin);
+  },
+};
 
-    const palpites = [];
-    for (const m of matches) {
-      const gmRaw = body[`j${m.id}_m`];
-      const gvRaw = body[`j${m.id}_v`];
-      const gm = parseGoals(gmRaw);
-      const gv = parseGoals(gvRaw);
-      if (gm === null || gv === null) {
-        return jsonResponse(
-          { error: `jogo ${m.id} (${m.mandante} × ${m.visitante}): gols inválidos` },
-          400,
-          origin
-        );
-      }
-      palpites.push({ ...m, gm, gv });
-    }
+async function handlePalpite(body, env, origin) {
+  const deadlineMs = Date.parse(env.DEADLINE_FASE_GRUPOS);
+  if (Number.isFinite(deadlineMs) && Date.now() > deadlineMs) {
+    return jsonResponse(
+      { error: "prazo encerrado em 10/06/2026, 23:59 BRT — não tô mais aceitando palpites de fase de grupos" },
+      403,
+      origin
+    );
+  }
 
-    const slug = slugify(nome);
-    const today = new Date().toISOString().slice(0, 10);
-    const yamlContent = renderYaml(nome, slug, today, palpites);
-    const path = `_data/palpites/${slug}.yml`;
+  const nome = (body.nome || "").trim().replace(/\s+/g, " ");
+  if (!nome) return jsonResponse({ error: "nome é obrigatório" }, 400, origin);
+  if (nome.length > 80) return jsonResponse({ error: "nome muito longo (máx 80 caracteres)" }, 400, origin);
 
-    try {
-      await commitFile(env, path, yamlContent, `palpite: ${nome}`);
-    } catch (err) {
+  const palpites = [];
+  for (const m of palpiteMatches) {
+    const gm = parseGoals(body[`j${m.id}_m`]);
+    const gv = parseGoals(body[`j${m.id}_v`]);
+    if (gm === null || gv === null) {
       return jsonResponse(
-        { error: "falha ao salvar no repo: " + err.message },
-        502,
+        { error: `jogo ${m.id} (${m.mandante} × ${m.visitante}): gols inválidos` },
+        400,
         origin
       );
     }
+    palpites.push({ ...m, gm, gv });
+  }
 
-    return jsonResponse(
-      { ok: true, slug, message: "palpite recebido — vai aparecer no site em ~1min" },
-      200,
-      origin
+  const slug = slugify(nome);
+  const today = new Date().toISOString().slice(0, 10);
+  const yamlContent = renderPalpiteYaml(nome, slug, today, palpites);
+  const path = `_data/palpites/${slug}.yml`;
+
+  try {
+    await commitFile(env, path, yamlContent, `palpite: ${nome}`);
+  } catch (err) {
+    return jsonResponse({ error: "falha ao salvar no repo: " + err.message }, 502, origin);
+  }
+
+  return jsonResponse(
+    { ok: true, slug, message: "palpite recebido — vai aparecer no site em ~1min" },
+    200,
+    origin
+  );
+}
+
+async function handleResultado(body, env, origin) {
+  const matchId = parseInt(body.match_id, 10);
+  if (!Number.isInteger(matchId) || !validMatchIds.has(matchId)) {
+    return jsonResponse({ error: `match_id ${body.match_id} inválido` }, 400, origin);
+  }
+  const gm = parseGoals(body.gm);
+  const gv = parseGoals(body.gv);
+  if (gm === null || gv === null) {
+    return jsonResponse({ error: "gols inválidos (use inteiro 0-20)" }, 400, origin);
+  }
+  const obs = (body.observacao || "")
+    .toString()
+    .replace(/[\r\n,]/g, " ")
+    .trim()
+    .slice(0, 200);
+
+  let existing;
+  try {
+    existing = await readFile(env, "_data/resultados.csv");
+  } catch (err) {
+    return jsonResponse({ error: "falha ao ler resultados.csv: " + err.message }, 502, origin);
+  }
+  const currentCsv = existing?.content || "match_id,gm,gv,observacao\n";
+  const updated = upsertResultadoCsv(currentCsv, matchId, gm, gv, obs);
+
+  try {
+    await commitFileWithSha(
+      env,
+      "_data/resultados.csv",
+      updated,
+      `resultado: jogo ${matchId} ${gm}x${gv}`,
+      existing?.sha
     );
-  },
-};
+  } catch (err) {
+    return jsonResponse({ error: "falha ao salvar no repo: " + err.message }, 502, origin);
+  }
+
+  return jsonResponse({ ok: true, match_id: matchId, gm, gv }, 200, origin);
+}
+
+function upsertResultadoCsv(csv, matchId, gm, gv, obs) {
+  const lines = csv.replace(/\r\n/g, "\n").split("\n");
+  const header = lines[0] || "match_id,gm,gv,observacao";
+  const dataLines = lines.slice(1).filter((l) => l.trim() !== "");
+  const newLine = `${matchId},${gm},${gv},${obs}`;
+  let found = false;
+  const out = dataLines.map((line) => {
+    const id = parseInt(line.split(",")[0], 10);
+    if (id === matchId) {
+      found = true;
+      return newLine;
+    }
+    return line;
+  });
+  if (!found) out.push(newLine);
+  out.sort((a, b) => parseInt(a.split(",")[0], 10) - parseInt(b.split(",")[0], 10));
+  return [header, ...out].join("\n") + "\n";
+}
 
 function parseGoals(raw) {
   if (raw === undefined || raw === null || raw === "") return null;
@@ -116,6 +174,13 @@ function utf8ToBase64(s) {
   return btoa(binary);
 }
 
+function base64ToUtf8(b64) {
+  const binary = atob(b64.replace(/\s/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
 function yamlEscape(s) {
   if (/[:#&*!|>'"%@`,\[\]{}]/.test(s) || s !== s.trim()) {
     return '"' + s.replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"';
@@ -123,7 +188,7 @@ function yamlEscape(s) {
   return s;
 }
 
-function renderYaml(nome, slug, today, palpites) {
+function renderPalpiteYaml(nome, slug, today, palpites) {
   const lines = [
     `nome: ${yamlEscape(nome)}`,
     `slug: ${slug}`,
@@ -141,39 +206,46 @@ function renderYaml(nome, slug, today, palpites) {
   return lines.join("\n") + "\n";
 }
 
-async function commitFile(env, path, content, message) {
-  const apiBase = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}`;
-  const auth = `Bearer ${env.GITHUB_TOKEN}`;
-  const headers = {
-    Authorization: auth,
+function githubHeaders(env) {
+  return {
+    Authorization: `Bearer ${env.GITHUB_TOKEN}`,
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "palpite-bolao26-worker",
   };
+}
 
-  let existingSha = undefined;
-  const head = await fetch(`${apiBase}?ref=${env.GITHUB_BRANCH}`, { headers });
-  if (head.status === 200) {
-    const data = await head.json();
-    existingSha = data.sha;
-  } else if (head.status !== 404) {
-    throw new Error(`GET contents falhou: ${head.status} ${await head.text()}`);
+async function readFile(env, path) {
+  const apiBase = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}?ref=${env.GITHUB_BRANCH}`;
+  const r = await fetch(apiBase, { headers: githubHeaders(env) });
+  if (r.status === 200) {
+    const data = await r.json();
+    return { content: base64ToUtf8(data.content), sha: data.sha };
   }
+  if (r.status === 404) return null;
+  throw new Error(`GET contents falhou: ${r.status} ${await r.text()}`);
+}
 
+async function commitFile(env, path, content, message) {
+  const existing = await readFile(env, path).catch(() => null);
+  return commitFileWithSha(env, path, content, message, existing?.sha);
+}
+
+async function commitFileWithSha(env, path, content, message, existingSha) {
+  const apiBase = `https://api.github.com/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/${path}`;
   const payload = {
     message,
     content: utf8ToBase64(content),
     branch: env.GITHUB_BRANCH,
   };
   if (existingSha) payload.sha = existingSha;
-
-  const put = await fetch(apiBase, {
+  const r = await fetch(apiBase, {
     method: "PUT",
-    headers: { ...headers, "Content-Type": "application/json" },
+    headers: { ...githubHeaders(env), "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (put.status !== 200 && put.status !== 201) {
-    throw new Error(`PUT contents falhou: ${put.status} ${await put.text()}`);
+  if (r.status !== 200 && r.status !== 201) {
+    throw new Error(`PUT contents falhou: ${r.status} ${await r.text()}`);
   }
 }
 

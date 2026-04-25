@@ -86,22 +86,24 @@ O importador valida tudo (gols ≥ 0, 72 jogos, sem faltas) antes de gravar. Se 
 
 ### Registrar resultado de um jogo
 
+**Caminho default — via página `/jogos/`:**
+
+1. Abre [`/jogos/`](https://cottascience.github.io/bolao26/jogos/).
+2. Preenche a palavra-chave no topo (mesma do site, persiste em localStorage).
+3. Em cada jogo concluído, preenche os dois inputs de gols e clica em ✓.
+4. Worker valida, faz upsert em `_data/resultados.csv` e commita.
+5. Action recalcula a classificação no build (`bin/calcular_pontos.py`) e Pages atualiza em ~1min.
+
+Reenviar sobrescreve, então é seguro corrigir sem se preocupar.
+
+**Caminho manual (sem internet, ou correção em massa):**
+
 ```bash
-# 1. abre _data/resultados.csv e adiciona uma linha:
-#    match_id,gm,gv,observacao
-#    1,2,0,
-#    (observacao é opcional — pode usar pra anotar "decidido nos pênaltis", etc.)
-
-# 2. recalcula a classificação
-.venv/bin/python bin/calcular_pontos.py
-
-# 3. commit + push
-git add _data/resultados.csv _data/classificacao.yml
-git commit -m "resultados: rodada N"
-git push
+# editar _data/resultados.csv direto e push
+git add _data/resultados.csv && git commit -m "resultados: rodada N" && git push
 ```
 
-`match_id` é o número do jogo (1–72 fase de grupos, 73+ mata-mata) — pega da [tabela de calendário](https://cottascience.github.io/bolao26/calendario/) ou direto de `_data/matches.csv`.
+A Action regenera `_data/classificacao.yml` no build, então não precisa rodar `calcular_pontos.py` localmente nem commitar o yml.
 
 O placar é o do **tempo regulamentar** (90 min). Se foi pra prorrogação/pênaltis, registra o placar dos 90 minutos.
 
@@ -166,7 +168,7 @@ assets/
   └── palpites_template.xlsx # template Excel (gerado, mas commitado)
 
 _includes/, _layouts/ # tema baseado em jekyll-minima
-*.md                  # páginas (index, regras, calendario, palpites, classificacao)
+*.md                  # páginas (index, regras, jogos, palpites, classificacao)
 .github/workflows/    # build + deploy em GitHub Pages
 ```
 

@@ -9,7 +9,7 @@ markdown: kramdown
 theme: minima
 header_pages:
   - regras.md
-  - calendario.md
+  - jogos.md
   - palpites.md
   - classificacao.md
 plugins: []
