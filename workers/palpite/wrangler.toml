@@ -1,0 +1,11 @@
+name = "palpite-bolao26"
+main = "src/index.js"
+compatibility_date = "2026-04-25"
+
+[vars]
+GITHUB_OWNER = "cottascience"
+GITHUB_REPO = "bolao26"
+GITHUB_BRANCH = "main"
+ALLOWED_ORIGIN = "https://cottascience.github.io"
+
+# secret: GITHUB_TOKEN — set via `wrangler secret put GITHUB_TOKEN`

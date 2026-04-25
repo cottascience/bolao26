@@ -9,9 +9,6 @@ permalink: /palpites/
 Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do visitante) e clica em enviar. Prazo: **10/06/2026, 23:59 BRT**.
 
 <form id="palpite-form" class="palpite-form">
-  <input type="hidden" name="access_key" value="34a18ce2-56bb-4ba4-b64f-f93c2dc8d112">
-  <input type="hidden" name="subject" value="Palpite BigBolaBrasil">
-  <input type="hidden" name="from_name" value="BigBolaBrasil">
   <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 
   <label class="palpite-form-label" for="nome">Nome</label>
@@ -44,7 +41,7 @@ Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do v
 
 <div id="palpite-form-thanks" class="palpite-form-thanks" hidden>
   <h4>Recebido! ⚽</h4>
-  <p>Seu palpite chegou. Vai aparecer abaixo nas próximas horas, depois que eu importar e dar push no repo. Se mudar de ideia antes do prazo, manda outro — vale o último.</p>
+  <p>Seu palpite caiu no repo. Em ~1 minuto o site rebuilda e ele aparece abaixo. Se mudar de ideia antes do prazo, manda outro — vale o último.</p>
 </div>
 
 <details class="palpite-form-fallback">
@@ -85,19 +82,19 @@ Se você quer preencher offline e me mandar por outro canal, baixa o template, p
     status.textContent = 'enviando...';
     const data = Object.fromEntries(new FormData(form));
     try {
-      const r = await fetch('https://api.web3forms.com/submit', {
+      const r = await fetch('https://palpite-bolao26.leoabreucotta.workers.dev', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (r.ok) {
+      const body = await r.json().catch(() => ({}));
+      if (r.ok && body.ok) {
         form.hidden = true;
         thanks.hidden = false;
         localStorage.removeItem(KEY);
         window.scrollTo({ top: thanks.offsetTop - 40, behavior: 'smooth' });
       } else {
-        const body = await r.json().catch(() => ({}));
-        status.textContent = 'erro ao enviar: ' + (body.message || r.statusText) + '. tenta de novo ou me chama no grupo.';
+        status.textContent = 'erro: ' + (body.error || r.statusText) + '. tenta de novo ou me chama no grupo.';
       }
     } catch (err) {
       status.textContent = 'erro de rede: ' + err.message + '. tenta de novo ou me chama no grupo.';

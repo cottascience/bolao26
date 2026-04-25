@@ -10,12 +10,12 @@ Bolão da Copa do Mundo 2026 entre amigos. Site Jekyll estático hospedado no Gi
 
 1. Abre [a página de palpites](https://cottascience.github.io/bolao26/palpites/).
 2. Coloca seu nome e os gols dos 72 jogos direto no formulário (mandante × visitante em cada linha).
-3. Clica em **enviar palpites**. Se aparecer "Recebido!", deu certo.
-4. Vai aparecer na seção de baixo da página depois que eu importar e dar push (~1 dia). Se mudar de ideia antes do prazo, **10/06/2026, 23:59 BRT**, é só abrir o form e mandar de novo — vale o último.
+3. Clica em **enviar palpites**. Se aparecer "Recebido!", deu certo — em ~1 min o site rebuilda e seu palpite aparece logo abaixo, no painel de "Palpites recebidos".
+4. Prazo: **10/06/2026, 23:59 BRT** (véspera do jogo de abertura). Antes disso, pode abrir o form e re-enviar quantas vezes quiser — vale o último.
 
 O formulário salva rascunho local automaticamente, então pode fechar a página e voltar depois sem perder o que já preencheu.
 
-Quem prefere preencher offline tem o caminho Excel: dentro de `Prefere Excel?` na própria página de palpites.
+Quem prefere preencher offline tem o caminho Excel: dentro de `Prefere Excel?` na própria página de palpites (eu importo manualmente).
 
 Regras de pontuação e prazos de mata-mata em [`/regras/`](https://cottascience.github.io/bolao26/regras/).
 
@@ -46,48 +46,43 @@ bundle exec jekyll serve
 
 Auto-rebuild em `.md`, `.scss`, `_data/`. **Mexeu em `_config.yml`?** Reinicia o `serve`.
 
-### Importar um palpite recebido (form HTML — caminho default)
+### Palpite via form (caminho default — automático, você não faz nada)
 
-Cada submissão do form na página de palpites cai no seu email via Web3Forms. O assunto vai ser `Palpite BigBolaBrasil`.
+A página de palpites tem um form HTML que posta direto pro Cloudflare Worker em `palpite-bolao26.leoabreucotta.workers.dev`. O Worker valida e commita o YAML em `_data/palpites/<slug>.yml` via GitHub API. Pages rebuilda em ~1min. **Você não precisa fazer absolutamente nada** — palpite aparece sozinho no site.
 
-1. Abre o email, copia todo o corpo (inclui linhas tipo `nome: João`, `j1_m: 2`, etc.).
-2. Cola num arquivo de texto:
+Onde está o quê:
 
-```bash
-pbpaste > /tmp/palpite.txt
-.venv/bin/python bin/email_para_yml.py /tmp/palpite.txt
-```
+- Código do Worker: `workers/palpite/src/index.js`
+- Config: `workers/palpite/wrangler.toml` (vars públicas)
+- Secret (PAT do GitHub): armazenado no Cloudflare, set via `wrangler secret put GITHUB_TOKEN`
+- Dados embutidos (matches.js): regenerar com `bin/gerar_worker_data.py` quando `_data/matches.csv` ou `_data/teams.csv` mudar (ex: mata-mata)
 
-Ou direto via stdin:
-
-```bash
-pbpaste | .venv/bin/python bin/email_para_yml.py -
-```
-
-3. Commit + push:
+#### Quando o calendário/times mudar (regenerar dados do worker)
 
 ```bash
-git add _data/palpites/
-git commit -m "palpite: Fulano"
-git push
+.venv/bin/python bin/gerar_worker_data.py
+cd workers/palpite && wrangler deploy
+cd ../..
+git add workers/palpite/src/matches.js
+git commit -m "worker: atualiza matches" && git push
 ```
 
-Se dois amigos têm o mesmo nome, usa `--apelido` pra forçar slug:
+#### Renovar PAT do GitHub (a cada ~6 meses, conforme expiração)
 
-```bash
-.venv/bin/python bin/email_para_yml.py /tmp/palpite.txt --apelido joao-segundo
-```
+1. https://github.com/settings/personal-access-tokens — gera um novo, mesmos parâmetros.
+2. `cd workers/palpite && wrangler secret put GITHUB_TOKEN` (cola o novo no prompt).
+3. Revoga o antigo.
 
-### Importar um palpite recebido (Excel — fallback)
+### Palpite via Excel (caminho fallback — manual)
 
-Se o amigo preferiu o caminho Excel:
+Se um amigo preferiu o caminho Excel (a opção em `Prefere Excel?` da página):
 
 ```bash
 .venv/bin/python bin/importar_palpite.py ~/Downloads/palpite_fulano.xlsx
 git add _data/palpites/ && git commit -m "palpite: Fulano" && git push
 ```
 
-Em ambos os caminhos, o importador valida tudo (gols ≥ 0, 72 jogos, sem faltas) antes de gravar e dá erro específico se algo está errado. Re-importar sobrescreve.
+O importador valida tudo (gols ≥ 0, 72 jogos, sem faltas) antes de gravar. Se dois amigos têm o mesmo nome, usa `--apelido` pra forçar slug.
 
 ### Registrar resultado de um jogo
 
@@ -157,9 +152,14 @@ _data/                # fontes de verdade (CSV/YAML, lidos pelo Jekyll)
 
 bin/                  # scripts Python (rodar via .venv/bin/python)
   ├── gerar_template.py     # _data/matches → assets/palpites_template.xlsx
-  ├── importar_palpite.py   # xlsx preenchido → _data/palpites/<slug>.yml
-  ├── email_para_yml.py     # email Web3Forms (form HTML) → _data/palpites/<slug>.yml
+  ├── gerar_worker_data.py  # _data/matches → workers/palpite/src/matches.js
+  ├── importar_palpite.py   # xlsx preenchido → _data/palpites/<slug>.yml (manual)
   └── calcular_pontos.py    # palpites + resultados → _data/classificacao.yml
+
+workers/palpite/      # Cloudflare Worker que recebe palpites do form
+  ├── src/index.js          # main: validação + commit via GitHub API
+  ├── src/matches.js        # gerado por bin/gerar_worker_data.py
+  └── wrangler.toml         # config (env vars + secret slot GITHUB_TOKEN)
 
 assets/
   ├── main.scss             # estilo (paleta, tipografia, componentes)
