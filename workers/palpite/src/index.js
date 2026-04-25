@@ -97,6 +97,11 @@ async function handleResultado(body, env, origin) {
   if (!Number.isInteger(matchId) || !validMatchIds.has(matchId)) {
     return jsonResponse({ error: `match_id ${body.match_id} inválido` }, 400, origin);
   }
+
+  if (body.delete === true) {
+    return handleResultadoDelete(matchId, env, origin);
+  }
+
   const gm = parseGoals(body.gm);
   const gv = parseGoals(body.gv);
   if (gm === null || gv === null) {
@@ -130,6 +135,38 @@ async function handleResultado(body, env, origin) {
   }
 
   return jsonResponse({ ok: true, match_id: matchId, gm, gv }, 200, origin);
+}
+
+async function handleResultadoDelete(matchId, env, origin) {
+  let existing;
+  try {
+    existing = await readFile(env, "_data/resultados.csv");
+  } catch (err) {
+    return jsonResponse({ error: "falha ao ler resultados.csv: " + err.message }, 502, origin);
+  }
+  if (!existing) {
+    return jsonResponse({ ok: true, removed: false }, 200, origin);
+  }
+  const lines = existing.content.replace(/\r\n/g, "\n").split("\n");
+  const header = lines[0] || "match_id,gm,gv,observacao";
+  const data = lines.slice(1).filter((l) => l.trim() !== "");
+  const filtered = data.filter((line) => parseInt(line.split(",")[0], 10) !== matchId);
+  if (filtered.length === data.length) {
+    return jsonResponse({ ok: true, removed: false }, 200, origin);
+  }
+  const updated = [header, ...filtered].join("\n") + "\n";
+  try {
+    await commitFileWithSha(
+      env,
+      "_data/resultados.csv",
+      updated,
+      `remove resultado: jogo ${matchId}`,
+      existing.sha
+    );
+  } catch (err) {
+    return jsonResponse({ error: "falha ao salvar no repo: " + err.message }, 502, origin);
+  }
+  return jsonResponse({ ok: true, removed: true, match_id: matchId }, 200, origin);
 }
 
 function upsertResultadoCsv(csv, matchId, gm, gv, obs) {

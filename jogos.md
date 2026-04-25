@@ -44,7 +44,8 @@ Pra registrar resultado de um jogo, preencha a palavra-chave (a mesma do site) a
       <input type="number" name="gm" min="0" max="20" inputmode="numeric" required value="{% if result %}{{ result.gm }}{% endif %}" aria-label="gols mandante">
       <span class="resultado-x">×</span>
       <input type="number" name="gv" min="0" max="20" inputmode="numeric" required value="{% if result %}{{ result.gv }}{% endif %}" aria-label="gols visitante">
-      <button type="submit" aria-label="enviar resultado">✓</button>
+      <button type="submit" class="resultado-submit" aria-label="enviar resultado">✓</button>
+      <button type="button" class="resultado-delete" aria-label="remover resultado">✕</button>
       <span class="resultado-status" hidden></span>
     </form>
   </li>
@@ -65,45 +66,81 @@ Pra registrar resultado de um jogo, preencha a palavra-chave (a mesma do site) a
     try { localStorage.setItem(KEY, palavraInput.value); } catch (e) {}
   });
 
+  function checkPalavra(status) {
+    const palavra = palavraInput.value.trim();
+    if (!palavra) {
+      status.hidden = false;
+      status.textContent = 'preenche a palavra-chave acima';
+      status.className = 'resultado-status erro';
+      palavraInput.focus();
+      return null;
+    }
+    return palavra;
+  }
+
+  async function postResultado(data, status, onOk) {
+    status.hidden = false;
+    status.textContent = '...';
+    status.className = 'resultado-status';
+    try {
+      const r = await fetch('https://palpite-bolao26.leoabreucotta.workers.dev/resultado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (r.ok && out.ok) {
+        onOk(out);
+      } else {
+        status.textContent = out.error || r.statusText;
+        status.className = 'resultado-status erro';
+      }
+    } catch (err) {
+      status.textContent = 'rede: ' + err.message;
+      status.className = 'resultado-status erro';
+    }
+  }
+
   document.querySelectorAll('.resultado-form').forEach(form => {
     const status = form.querySelector('.resultado-status');
+    const deleteBtn = form.querySelector('.resultado-delete');
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const palavra = palavraInput.value.trim();
-      if (!palavra) {
-        status.hidden = false;
-        status.textContent = 'preenche a palavra-chave acima';
-        status.className = 'resultado-status erro';
-        palavraInput.focus();
-        return;
-      }
-      status.hidden = false;
-      status.textContent = '...';
-      status.className = 'resultado-status';
+      const palavra = checkPalavra(status);
+      if (!palavra) return;
       const data = {
         palavra_chave: palavra,
         match_id: parseInt(form.dataset.matchId, 10),
         gm: parseInt(form.elements.gm.value, 10),
         gv: parseInt(form.elements.gv.value, 10),
       };
-      try {
-        const r = await fetch('https://palpite-bolao26.leoabreucotta.workers.dev/resultado', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        const out = await r.json().catch(() => ({}));
-        if (r.ok && out.ok) {
-          status.textContent = 'salvo ✓';
+      await postResultado(data, status, () => {
+        status.textContent = 'salvo ✓';
+        status.className = 'resultado-status ok';
+      });
+    });
+
+    deleteBtn.addEventListener('click', async () => {
+      const palavra = checkPalavra(status);
+      if (!palavra) return;
+      if (!confirm('Remover o resultado deste jogo?')) return;
+      const data = {
+        palavra_chave: palavra,
+        match_id: parseInt(form.dataset.matchId, 10),
+        delete: true,
+      };
+      await postResultado(data, status, (out) => {
+        if (out.removed) {
+          form.elements.gm.value = '';
+          form.elements.gv.value = '';
+          status.textContent = 'removido ✓';
           status.className = 'resultado-status ok';
         } else {
-          status.textContent = out.error || r.statusText;
-          status.className = 'resultado-status erro';
+          status.textContent = 'nada pra remover';
+          status.className = 'resultado-status';
         }
-      } catch (err) {
-        status.textContent = 'rede: ' + err.message;
-        status.className = 'resultado-status erro';
-      }
+      });
     });
   });
 })();

@@ -265,7 +265,7 @@ li {
 
 .match {
   display: grid;
-  grid-template-columns: 52px 1fr 130px 140px 130px;
+  grid-template-columns: 52px 1fr 130px 130px 175px;
   grid-column-gap: 14px;
   align-items: baseline;
   padding: 5px 0;
@@ -372,11 +372,21 @@ li {
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.9em;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.resultado-form button:hover {
+.resultado-form .resultado-submit:hover {
   background: #8B4A62;
+  color: #FFF9F5;
+}
+
+.resultado-form .resultado-delete {
+  border-color: #b54040;
+  color: #b54040;
+}
+
+.resultado-form .resultado-delete:hover {
+  background: #b54040;
   color: #FFF9F5;
 }
 
