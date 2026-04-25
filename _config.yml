@@ -1,0 +1,20 @@
+title: BigBolaBrasil
+description: Bolão da Copa do Mundo 2026
+lang: pt-BR
+timezone: America/Sao_Paulo
+baseurl: ""
+url: "https://cottascience.github.io"
+
+markdown: kramdown
+theme: minima
+header_pages:
+  - regras.md
+  - calendario.md
+  - palpites.md
+  - classificacao.md
+plugins: []
+
+exclude:
+  - bin/
+  - .venv/
+  - README.md

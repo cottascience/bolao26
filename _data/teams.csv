@@ -1,0 +1,49 @@
+id,team_name,fifa_code,group_letter,is_placeholder,team_name_pt
+1,Mexico,MEX,A,False,México
+2,South Africa,RSA,A,False,África do Sul
+3,South Korea,KOR,A,False,Coreia do Sul
+4,Czechia,CZE,A,False,Tchéquia
+5,Canada,CAN,B,False,Canadá
+6,Bosnia and Herzegovina,BIH,B,False,Bósnia e Herzegovina
+7,Qatar,QAT,B,False,Catar
+8,Switzerland,SUI,B,False,Suíça
+9,Brazil,BRA,C,False,Brasil
+10,Morocco,MAR,C,False,Marrocos
+11,Haiti,HAI,C,False,Haiti
+12,Scotland,SCO,C,False,Escócia
+13,USA,USA,D,False,Estados Unidos
+14,Paraguay,PAR,D,False,Paraguai
+15,Australia,AUS,D,False,Austrália
+16,Türkiye,TUR,D,False,Turquia
+17,Germany,GER,E,False,Alemanha
+18,Curaçao,CUR,E,False,Curaçao
+19,Côte d'Ivoire,CIV,E,False,Costa do Marfim
+20,Ecuador,ECU,E,False,Equador
+21,Netherlands,NED,F,False,Holanda
+22,Japan,JPN,F,False,Japão
+23,Sweden,SWE,F,False,Suécia
+24,Tunisia,TUN,F,False,Tunísia
+25,Belgium,BEL,G,False,Bélgica
+26,Egypt,EGY,G,False,Egito
+27,IR Iran,IRN,G,False,Irã
+28,New Zealand,NZL,G,False,Nova Zelândia
+29,Spain,ESP,H,False,Espanha
+30,Cabo Verde,CPV,H,False,Cabo Verde
+31,Saudi Arabia,KSA,H,False,Arábia Saudita
+32,Uruguay,URU,H,False,Uruguai
+33,France,FRA,I,False,França
+34,Senegal,SEN,I,False,Senegal
+35,Iraq,IRQ,I,False,Iraque
+36,Norway,NOR,I,False,Noruega
+37,Argentina,ARG,J,False,Argentina
+38,Algeria,ALG,J,False,Argélia
+39,Austria,AUT,J,False,Áustria
+40,Jordan,JOR,J,False,Jordânia
+41,Portugal,POR,K,False,Portugal
+42,DR Congo,COD,K,False,RD Congo
+43,Uzbekistan,UZB,K,False,Uzbequistão
+44,Colombia,COL,K,False,Colômbia
+45,England,ENG,L,False,Inglaterra
+46,Croatia,CRO,L,False,Croácia
+47,Ghana,GHA,L,False,Gana
+48,Panama,PAN,L,False,Panamá

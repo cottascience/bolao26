@@ -1,0 +1,6 @@
+.claude/
+.venv/
+.osgrep/
+_site/
+.jekyll-cache/
+.DS_Store

@@ -1,0 +1,41 @@
+---
+layout: default
+---
+
+<div class="home">
+  {%- if page.title -%}
+    <h1 class="page-heading">{{ page.title }}</h1>
+  {%- endif -%}
+  {{ content }}
+  {%- if site.posts.size > 0 -%}
+    <h2 id="posts" class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
+    <!--
+    <form
+      action="https://buttondown.com/api/emails/embed-subscribe/cotta"
+      method="post"
+      class="embeddable-buttondown-form"
+      referrerpolicy="unsafe-url"
+    >
+      <label for="bd-email">Enter your email:</label>
+      <input type="email" name="email" id="bd-email" />
+      <input type="submit" value="subscribe" style="font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', 'Courier New', monospace;" />
+    </form>
+    -->
+    <ul class="post-list">
+      {%- for post in site.posts -%}
+      <li>
+        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
+        <span class="post-meta">{{ post.date | date: date_format }}</span>
+        <h3>
+          <a class="post-link" href="{{ post.url | relative_url }}">
+            {{ post.title | escape }}
+          </a>
+        </h3>
+        {%- if site.show_excerpts -%}
+          {{ post.excerpt }}
+        {%- endif -%}
+      </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+</div>
