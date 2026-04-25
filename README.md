@@ -8,13 +8,14 @@ Bolão da Copa do Mundo 2026 entre amigos. Site Jekyll estático hospedado no Gi
 
 ## Para participantes
 
-1. Abre [a página de palpites](https://cottascience.github.io/bolao26/palpites/) e clica em **baixar template**.
-2. Abre o `.xlsx` no Excel (ou Numbers, Google Sheets, LibreOffice).
-3. Preenche a célula amarela do topo com seu **NOME**.
-4. Pra cada um dos 72 jogos da fase de grupos, preenche os gols do mandante e do visitante (as duas células amarelas de cada linha). Não mexa nas demais colunas e não renomeie nada.
-5. Salva mantendo o formato `.xlsx`.
-6. Manda o arquivo pelo grupo até **10/06/2026, 23:59 BRT** (véspera do jogo de abertura).
-7. Quando seu palpite aparecer em `/palpites/` no site, está valendo. Se quiser mudar antes do prazo, manda outra versão do mesmo arquivo.
+1. Abre [a página de palpites](https://cottascience.github.io/bolao26/palpites/).
+2. Coloca seu nome e os gols dos 72 jogos direto no formulário (mandante × visitante em cada linha).
+3. Clica em **enviar palpites**. Se aparecer "Recebido!", deu certo.
+4. Vai aparecer na seção de baixo da página depois que eu importar e dar push (~1 dia). Se mudar de ideia antes do prazo, **10/06/2026, 23:59 BRT**, é só abrir o form e mandar de novo — vale o último.
+
+O formulário salva rascunho local automaticamente, então pode fechar a página e voltar depois sem perder o que já preencheu.
+
+Quem prefere preencher offline tem o caminho Excel: dentro de `Prefere Excel?` na própria página de palpites.
 
 Regras de pontuação e prazos de mata-mata em [`/regras/`](https://cottascience.github.io/bolao26/regras/).
 
@@ -45,24 +46,48 @@ bundle exec jekyll serve
 
 Auto-rebuild em `.md`, `.scss`, `_data/`. **Mexeu em `_config.yml`?** Reinicia o `serve`.
 
-### Importar um palpite recebido
+### Importar um palpite recebido (form HTML — caminho default)
+
+Cada submissão do form na página de palpites cai no seu email via Web3Forms. O assunto vai ser `Palpite BigBolaBrasil`.
+
+1. Abre o email, copia todo o corpo (inclui linhas tipo `nome: João`, `j1_m: 2`, etc.).
+2. Cola num arquivo de texto:
 
 ```bash
-.venv/bin/python bin/importar_palpite.py ~/Downloads/palpite_fulano.xlsx
-# OK: Fulano (fulano) — 72 palpites -> _data/palpites/fulano.yml
+pbpaste > /tmp/palpite.txt
+.venv/bin/python bin/email_para_yml.py /tmp/palpite.txt
+```
 
+Ou direto via stdin:
+
+```bash
+pbpaste | .venv/bin/python bin/email_para_yml.py -
+```
+
+3. Commit + push:
+
+```bash
 git add _data/palpites/
 git commit -m "palpite: Fulano"
 git push
 ```
 
-O nome vem do campo `NOME` do próprio arquivo. O slug é derivado (acentos removidos, espaços viram `-`). Se dois amigos têm o mesmo nome, usa `--apelido <override>` pra forçar:
+Se dois amigos têm o mesmo nome, usa `--apelido` pra forçar slug:
 
 ```bash
-.venv/bin/python bin/importar_palpite.py palpite_joao2.xlsx --apelido joao-segundo
+.venv/bin/python bin/email_para_yml.py /tmp/palpite.txt --apelido joao-segundo
 ```
 
-Se um participante mandar atualização antes do prazo, importar de novo simplesmente sobrescreve. O importador valida tudo antes de gravar (encoding, schema, gols ≥ 0, 72 linhas, sem duplicatas) e dá erro específico se algo tá errado.
+### Importar um palpite recebido (Excel — fallback)
+
+Se o amigo preferiu o caminho Excel:
+
+```bash
+.venv/bin/python bin/importar_palpite.py ~/Downloads/palpite_fulano.xlsx
+git add _data/palpites/ && git commit -m "palpite: Fulano" && git push
+```
+
+Em ambos os caminhos, o importador valida tudo (gols ≥ 0, 72 jogos, sem faltas) antes de gravar e dá erro específico se algo está errado. Re-importar sobrescreve.
 
 ### Registrar resultado de um jogo
 
@@ -132,7 +157,8 @@ _data/                # fontes de verdade (CSV/YAML, lidos pelo Jekyll)
 
 bin/                  # scripts Python (rodar via .venv/bin/python)
   ├── gerar_template.py     # _data/matches → assets/palpites_template.xlsx
-  ├── importar_palpite.py   # palpite preenchido → _data/palpites/<slug>.yml
+  ├── importar_palpite.py   # xlsx preenchido → _data/palpites/<slug>.yml
+  ├── email_para_yml.py     # email Web3Forms (form HTML) → _data/palpites/<slug>.yml
   └── calcular_pontos.py    # palpites + resultados → _data/classificacao.yml
 
 assets/
