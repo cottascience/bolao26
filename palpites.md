@@ -25,8 +25,8 @@ Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do v
 {% assign jogos = site.data.matches | where: "stage_id", "1" %}
 {% assign grupos = "A,B,C,D,E,F,G,H,I,J,K,L" | split: "," %}
 {% for letra in grupos %}
-  <div class="palpite-form-grupo">
-    <h5>Grupo {{ letra }}</h5>
+  <details class="palpite-form-grupo" open>
+    <summary>Grupo {{ letra }}</summary>
     {% for jogo in jogos %}
       {% assign home = site.data.teams | where: "id", jogo.home_team_id | first %}
       {% if home.group_letter == letra %}
@@ -40,7 +40,7 @@ Coloca seu nome, preenche os 72 jogos da fase de grupos (gols do mandante e do v
     </div>
       {% endif %}
     {% endfor %}
-  </div>
+  </details>
 {% endfor %}
 
   <button type="submit" class="download-btn palpite-form-submit">enviar palpites</button>
@@ -128,9 +128,11 @@ Ainda nenhum. Conforme forem chegando, cada participante ganha uma seção aqui 
 
 {% for entry in site.data.palpites %}
 {% assign p = entry[1] %}
-
-#### {{ p.nome }}
-<p class="palpite-meta">recebido em {{ p.recebido_em }} · {{ p.palpites.size }} palpites</p>
+<details class="palpite-recebido">
+<summary>
+<span class="palpite-recebido-nome">{{ p.nome }}</span>
+<span class="palpite-recebido-meta">recebido em {{ p.recebido_em }} · {{ p.palpites.size }} palpites</span>
+</summary>
 
 {% assign por_grupo = p.palpites | group_by: "grupo" %}
 <div class="palpite-grupos">
@@ -149,6 +151,6 @@ Ainda nenhum. Conforme forem chegando, cada participante ganha uma seção aqui 
 </div>
 {% endfor %}
 </div>
-
+</details>
 {% endfor %}
 {% endif %}

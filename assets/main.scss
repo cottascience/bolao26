@@ -462,7 +462,35 @@ li {
   margin-top: 1.4em;
 }
 
-.palpite-form-grupo h5 {
+.palpite-form-grupo > summary,
+.palpite-recebido > summary {
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.palpite-form-grupo > summary::-webkit-details-marker,
+.palpite-recebido > summary::-webkit-details-marker {
+  display: none;
+}
+
+.palpite-form-grupo > summary::before,
+.palpite-recebido > summary::before {
+  content: "›";
+  display: inline-block;
+  margin-right: 0.6em;
+  font-family: 'JetBrains Mono', monospace;
+  color: #7A7F9C;
+  transition: transform 0.2s ease;
+  font-weight: 700;
+}
+
+.palpite-form-grupo[open] > summary::before,
+.palpite-recebido[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.palpite-form-grupo > summary {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85em;
   text-transform: uppercase;
@@ -470,6 +498,37 @@ li {
   border-bottom: 1px solid #2D3250;
   padding-bottom: 0.2em;
   margin-bottom: 0.4em;
+}
+
+.palpite-recebido {
+  margin: 0.6em 0;
+  padding: 0.5em 0;
+  border-bottom: 1.5px dashed #e8d8ce;
+}
+
+.palpite-recebido[open] {
+  padding-bottom: 1.4em;
+}
+
+.palpite-recebido > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8em;
+  flex-wrap: wrap;
+}
+
+.palpite-recebido-nome {
+  font-family: 'Merriweather', serif;
+  font-weight: 700;
+  font-size: 1.15em;
+}
+
+.palpite-recebido-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: #7A7F9C;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .palpite-form-row {
